@@ -1,0 +1,6 @@
+# Keep the SACRED vault out of the build context and image.
+# Only the application code under app/ should ever enter the image.
+*
+!app/
+app/**/__pycache__/
+**/*.pyc

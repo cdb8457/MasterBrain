@@ -1,0 +1,98 @@
+# =============================================================================
+# MasterBrain — .gitignore
+#
+# Model: the GitHub repo carries CODE + SCAFFOLDING + TEMPLATES + DOCS + the
+# safe architecture SEED pages only. REAL brain/vault content (canonical pages,
+# entities, components, queries, comparisons, notes, sources, structured memory)
+# lives ONLY on the Unraid /data volume and is restored from backup — it is
+# IGNORED BY DEFAULT here so it can never be committed by accident.
+# Folder structure is preserved via .gitkeep placeholders and area READMEs.
+# Use a PRIVATE repository.
+# =============================================================================
+
+# --- Secrets / local config -------------------------------------------------
+.env
+.env.*
+!.env.example
+
+# --- Python caches / build --------------------------------------------------
+__pycache__/
+*.py[cod]
+*.egg-info/
+.eggs/
+build/
+dist/
+.venv/
+venv/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# --- OS / editor / vault cruft ----------------------------------------------
+.DS_Store
+Thumbs.db
+*.swp
+*~
+.idea/
+.vscode/
+.obsidian/
+.cache/
+*.tmp
+*.log
+
+# --- Durable structured memory (lives on /data, not git) --------------------
+graph-memory/*.jsonl
+
+# --- Generated graph output (regenerable cache) -----------------------------
+graphify-out/
+
+# --- Private knowledge: raw sources -----------------------------------------
+raw/**
+!raw/**/
+!raw/README.md
+
+# --- Private knowledge: agent inbox notes -----------------------------------
+inbox/**
+!inbox/**/
+!inbox/README.md
+
+# --- Private knowledge: per-agent notes (keep registry only) ----------------
+agents/*/**
+!agents/**/
+!agents/agent-registry.md
+
+# =============================================================================
+# CANONICAL VAULT CONTENT — ignore by default; allowlist only safe seeds.
+# Future real pages dropped into these folders are IGNORED automatically.
+# To publish a specific page later, add an explicit `!path/to/file.md` line.
+# =============================================================================
+
+# concepts/ — only the architecture seed is tracked
+concepts/**
+!concepts/**/
+!concepts/shared-external-agent-memory-graph.md
+
+# projects/ — only the second-brain build/architecture docs are tracked
+projects/**
+!projects/**/
+!projects/second-brain/*.md
+
+# entities/ components/ queries/ comparisons/ — scaffold only (no seed docs)
+entities/**
+!entities/**/
+
+components/**
+!components/**/
+
+queries/**
+!queries/**/
+# The generated review queue embeds private claim text — never track it, even
+# if queries/ is ever selectively un-ignored (PROCESS.md rule 14).
+queries/review-queue.md
+
+comparisons/**
+!comparisons/**/
+
+# --- Always keep folder placeholders + area READMEs so structure survives ---
+!**/.gitkeep
+!**/README.md

@@ -1,0 +1,5 @@
+# MasterBrain MVP dependencies.
+# The CLI and store use only the Python standard library — nothing here is
+# required for CLI-only operation. These are for the OPTIONAL FastAPI service.
+fastapi>=0.110,<1.0
+uvicorn[standard]>=0.29,<1.0

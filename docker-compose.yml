@@ -1,0 +1,39 @@
+# MasterBrain — Shared External Agent Brain
+# Core principle: the container is replaceable; the mounted vault is sacred.
+#
+# The single volume below is the whole point of this deployment: a persistent
+# host path is bind-mounted to /data so that memory survives every container
+# rebuild, image update, or recreation.
+
+services:
+  masterbrain:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: ${MASTERBRAIN_IMAGE:-masterbrain:latest}
+    container_name: ${MASTERBRAIN_CONTAINER_NAME:-masterbrain}
+    restart: unless-stopped
+    environment:
+      MASTERBRAIN_DATA_DIR: /data
+      MASTERBRAIN_API_HOST: 0.0.0.0
+      MASTERBRAIN_API_PORT: 8077
+      TZ: ${TZ:-UTC}
+    ports:
+      # host:container — the API always listens on 8077 inside the container.
+      # SECURITY: the API has NO AUTH — keep it LAN-only. Never port-forward or
+      # reverse-proxy it to the internet. To restrict further, prefix a host IP
+      # in .env, e.g. MASTERBRAIN_API_PORT=192.168.1.50:8077 (LAN interface)
+      # or MASTERBRAIN_API_PORT=127.0.0.1:8077 (host-only).
+      - "${MASTERBRAIN_API_PORT:-8077}:8077"
+    volumes:
+      # SACRED persistent vault. Local dev: ./   Unraid: /mnt/user/appdata/masterbrain
+      - "${MASTERBRAIN_VAULT_HOST_PATH:-./}:/data"
+    # Default command runs the lightweight API (see Dockerfile). To run CLI-only,
+    # comment out the API by overriding the command, e.g.:
+    #   command: ["tail", "-f", "/dev/null"]   # idle container; use `docker exec`
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request,sys; urllib.request.urlopen('http://127.0.0.1:8077/health'); "]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
