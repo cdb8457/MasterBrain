@@ -254,6 +254,42 @@ been reviewed (D6). Revoke any time:
 `docker exec masterbrain python -m masterbrain token revoke --agent claude`.
 Still LAN-only; never port-forward or reverse-proxy.
 
+## Addendum - Phase 3b MCP pilot (claude only; fresh token, then revoke)
+
+No container/API changes in 3b - nothing to rebuild. The MCP server runs on
+the AGENT's machine and talks to the existing API.
+
+```bash
+# 1. (Unraid) Issue a FRESH claude token for the pilot (shown once)
+docker exec masterbrain python -m masterbrain token issue --agent claude
+```
+
+2. (Agent machine) `pip install -r mcp/requirements.txt`, then add the
+   `masterbrain` server to the agent's MCP config per `mcp/README.md`,
+   with `MASTERBRAIN_API_URL=http://<unraid-lan-ip>:8077` and the fresh
+   token in `MASTERBRAIN_TOKEN`.
+
+3. (Agent) Run exactly three tool calls:
+   - `masterbrain_add_note` (title "Phase 3b MCP pilot note")
+   - `masterbrain_add_claim` (subject
+     `projects/second-brain/unraid-arcane-deployment-plan`, claim
+     "Phase 3b MCP pilot claim", source_type "mcp-test")
+   - `masterbrain_add_edge` with `edge_type="approved_by"` - MUST fail
+     with "403 ... approval/canonical authority".
+
+```bash
+# 4. (Unraid) Verify all three attempts and the two records:
+docker exec masterbrain python -m masterbrain audit --tail 10
+docker exec masterbrain python -m masterbrain review-queue
+
+# 5. (Unraid) Revoke the pilot token (D5):
+docker exec masterbrain python -m masterbrain token revoke --agent claude
+```
+
+Expected: audit shows 2x ok + 1x rejected for agent `claude`; review-queue
+shows the pilot note (claimless bucket) and the draft claim. Do NOT issue
+codex/hermes/gpt/gemini tokens until Clint reviews this pilot.
+
 ## Result log
 
 | Date | Step reached | Notes |

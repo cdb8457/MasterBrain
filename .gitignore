@@ -16,6 +16,9 @@
 !.env.example
 # Agent API token hashes (Phase 3a) — never commit, even hashed.
 .secrets/
+# Agent-side MCP local config/env (Phase 3b) — may contain a token.
+mcp/.env
+mcp/.mcp.json
 
 # --- Python caches / build --------------------------------------------------
 __pycache__/

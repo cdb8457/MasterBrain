@@ -1,0 +1,5 @@
+# MasterBrain MCP server (Phase 3b) - AGENT-SIDE dependencies only.
+# Never add these to app/requirements.txt: the container image stays
+# dependency-free of MCP (the API is the single enforcement point).
+# Pinned to the version verified in Phase 3b testing (2026-06-11).
+mcp==1.27.2

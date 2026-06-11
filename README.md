@@ -156,6 +156,14 @@ Token hashes (sha256 only — plaintext is shown once at issue) live in
 `<vault>/.secrets/agent-tokens.json`, which is gitignored. Still LAN-only;
 still never internet-exposed.
 
+## MCP server (Phase 3b)
+
+MCP-capable agents (Claude, Codex, Hermes harnesses) can use native tool
+calls via the **agent-side** thin-client MCP server in [`mcp/`](mcp/README.md)
+— it forwards everything to the authenticated API above, so all guards,
+identity, and audit apply unchanged. Setup, contract, and token rules:
+[`mcp/README.md`](mcp/README.md). The container image is unaffected.
+
 ## Review queue (Phase 1.9)
 
 One view of everything waiting on Clint — draft/proposed claims, contested
