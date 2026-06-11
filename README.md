@@ -124,6 +124,38 @@ python -m masterbrain resolve --subject "X"     # dry-run resolution
 New claims carry `canonical_id` + `canonical_slug` (schema v0.6, additive);
 legacy records get theirs computed at read time, never rewritten.
 
+## Authenticated agent writes (Phase 3a)
+
+The API is **token-gated: every endpoint requires a per-agent bearer token
+except `GET /health`.** Identity is derived from the token (conflicting
+identity in a body is rejected). The network surface can only produce:
+attributed draft notes in the agent's own `inbox/<agent>/` lane
+(`POST /notes`), **draft-only** claims (`POST /claims`, unknown subjects →
+409 with suggestions; `force_new_subject` is explicit + audited), sources,
+and safe provenance edges (`approved_by`/`supersedes` rejected). **Review,
+link, supersede, approval, and canonical writes do not exist over HTTP** —
+Clint elevates via the local CLI only. Every write attempt and auth failure
+lands in append-only `graph-memory/audit.jsonl` (payload digests only;
+bodies size-capped before parsing).
+
+```bash
+# Clint, on the box:
+docker exec masterbrain python -m masterbrain token issue --agent claude
+docker exec masterbrain python -m masterbrain token list
+docker exec masterbrain python -m masterbrain token revoke --agent claude
+docker exec masterbrain python -m masterbrain audit --tail 50
+
+# An agent, from the LAN:
+curl -H "Authorization: Bearer $TOKEN" http://<host>:8077/stats
+curl -H "Authorization: Bearer $TOKEN" -H "Content-Type: application/json" \
+  -d '{"title":"My note","body":"...","links":["[[Some Page]]"]}' \
+  http://<host>:8077/notes
+```
+
+Token hashes (sha256 only — plaintext is shown once at issue) live in
+`<vault>/.secrets/agent-tokens.json`, which is gitignored. Still LAN-only;
+still never internet-exposed.
+
 ## Review queue (Phase 1.9)
 
 One view of everything waiting on Clint — draft/proposed claims, contested

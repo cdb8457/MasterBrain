@@ -211,8 +211,52 @@ Manage the stack in Arcane with these invariants:
 | Files on the share owned by root | Known MVP behavior (PUID/PGID deferred). Fine for appdata; SMB editing may need a chown - see deployment plan "Permissions". |
 | `lint` reports errors | Stop; paste output back to the session before continuing. |
 
+## Addendum - Phase 3a rollout: authenticated agent writes
+
+After rebuilding with the Phase 3a image, ALL endpoints except `GET /health`
+require a bearer token. Rollout (one-agent pilot, claude only - D6):
+
+```bash
+cd /mnt/user/appdata/masterbrain-code && git pull
+docker compose up -d --build
+
+# 1. Confirm the lockdown: unauthenticated reads must fail now
+curl -s -o /dev/null -w "%{http_code}\n" http://<unraid-ip>:8077/stats   # expect 401
+curl -s http://<unraid-ip>:8077/health                                   # expect {"status":"ok",...}
+
+# 2. Issue the claude token (shown ONCE - store it in your password manager)
+docker exec masterbrain python -m masterbrain token issue --agent claude
+
+# 3. Pilot writes from a LAN machine (replace $TOK)
+curl -s -H "Authorization: Bearer $TOK" http://<unraid-ip>:8077/stats     # expect JSON
+curl -s -H "Authorization: Bearer $TOK" -H "Content-Type: application/json" \
+  -d '{"title":"Phase 3a pilot note","body":"hello from the claude token"}' \
+  http://<unraid-ip>:8077/notes                                           # expect {"path":"inbox/claude/..."}
+curl -s -H "Authorization: Bearer $TOK" -H "Content-Type: application/json" \
+  -d '{"canonical_subject":"projects/second-brain/unraid-arcane-deployment-plan","claim":"Phase 3a pilot claim","source_type":"api-test"}' \
+  http://<unraid-ip>:8077/claims                                          # expect draft claim JSON
+
+# 4. Negative checks (all must fail)
+curl -s -H "Authorization: Bearer $TOK" -H "Content-Type: application/json" \
+  -d '{"canonical_subject":"projects/second-brain/unraid-arcane-deployment-plan","claim":"x","approval_status":"approved"}' \
+  http://<unraid-ip>:8077/claims          # expect 403 (draft-only)
+curl -s -H "Authorization: Bearer $TOK" -H "Content-Type: application/json" \
+  -d '{"from_id":"a","to_id":"b","edge_type":"approved_by"}' \
+  http://<unraid-ip>:8077/edges           # expect 403 (privileged edge type)
+
+# 5. Audit + queue
+docker exec masterbrain python -m masterbrain audit --tail 20
+docker exec masterbrain python -m masterbrain review-queue
+```
+
+Do NOT issue codex/hermes/gpt/gemini tokens until the claude pilot output has
+been reviewed (D6). Revoke any time:
+`docker exec masterbrain python -m masterbrain token revoke --agent claude`.
+Still LAN-only; never port-forward or reverse-proxy.
+
 ## Result log
 
 | Date | Step reached | Notes |
 |---|---|---|
-| _(fill in)_ | | |
+| 2026-06-10 | 11 (complete) | First hosted run complete per Clint: health OK, /data mounted from /mnt/user/appdata/masterbrain, rebuild persistence passed, backup/restore sanity check passed. |
+| _(fill in after Phase 3a rollout)_ | | |

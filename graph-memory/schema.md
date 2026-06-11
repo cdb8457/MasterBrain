@@ -128,6 +128,25 @@ components/ projects/` (their filename slug, `title:`, and Obsidian-style
 
 See `python -m masterbrain subjects` / `resolve` (both read-only).
 
+## Audit event (v0.7, additive — Phase 3a)
+
+`graph-memory/audit.jsonl` records every network write ATTEMPT and auth
+failure (append-only; gitignored with the other JSONL):
+
+| Field | Notes |
+|-------|-------|
+| `event_id` | `aud_…` |
+| `type` | `audit` |
+| `created_at` | ISO-8601 UTC |
+| `agent` | Token-derived agent key, or `unauthenticated`. |
+| `endpoint` / `method` | e.g. `/claims`, `POST`. |
+| `outcome` | `ok` \| `rejected` \| `auth-failed`. |
+| `status_code` | HTTP status. |
+| `reason` | Rejection reason, if any. |
+| `payload_sha256` | Digest of the (size-capped) payload — never the payload itself, never token material. |
+| `flags` | e.g. `force_new_subject`. |
+| `result_id` | Created record id / note path on success. |
+
 ## Backwards compatibility (legacy → canonical)
 
 Pre-0.5 sample records are accepted and **normalized at read time** (never

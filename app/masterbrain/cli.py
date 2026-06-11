@@ -164,6 +164,17 @@ def build_parser() -> argparse.ArgumentParser:
                          "queries/review-queue.md (gitignored). Nothing else "
                          "is touched.")
 
+    tk = sub.add_parser("token", help="Manage per-agent API bearer tokens "
+                                      "(Clint-only, run on the box).")
+    tk.add_argument("action", choices=("issue", "revoke", "list"))
+    tk.add_argument("--agent", default=None,
+                    help="Registered agent key (required for issue/revoke).")
+
+    au = sub.add_parser("audit", help="Show the append-only API audit log.")
+    au.add_argument("--tail", type=int, default=20,
+                    help="Show the last N events (default 20).")
+    au.add_argument("--json", action="store_true", dest="as_json")
+
     return p
 
 
@@ -209,6 +220,44 @@ def main(argv: list[str] | None = None) -> int:
         except ValueError as exc:
             print(f"error: {exc}", file=sys.stderr)
             return 1
+
+    if args.cmd == "token":
+        from .auth import issue_token, list_tokens, revoke_token
+
+        if args.action in ("issue", "revoke") and not args.agent:
+            print("error: --agent is required", file=sys.stderr)
+            return 1
+        try:
+            if args.action == "issue":
+                token = issue_token(store.data_dir, args.agent)
+                print(f"TOKEN (shown ONCE, store it securely): {token}")
+                print("Only the sha256 hash is kept on disk "
+                      "(.secrets/agent-tokens.json).", file=sys.stderr)
+            elif args.action == "revoke":
+                ok = revoke_token(store.data_dir, args.agent)
+                print("revoked" if ok else "no active token for that agent")
+            else:
+                _print(list_tokens(store.data_dir))
+        except ValueError as exc:
+            print(f"error: {exc}", file=sys.stderr)
+            return 1
+        return 0
+
+    if args.cmd == "audit":
+        from .audit import read_audit
+
+        events = read_audit(store.data_dir, tail=args.tail)
+        if args.as_json:
+            _print(events)
+        else:
+            if not events:
+                print("audit log is empty")
+            for e in events:
+                print(f"{e.get('created_at')}  [{e.get('outcome'):11}] "
+                      f"{e.get('agent'):16} {e.get('method'):4} "
+                      f"{e.get('endpoint'):14} {e.get('status_code')} "
+                      f"{e.get('reason') or e.get('result_id') or ''}")
+        return 0
 
     if args.cmd == "review-queue":
         from .review_queue import build_queue, render_text, write_report
